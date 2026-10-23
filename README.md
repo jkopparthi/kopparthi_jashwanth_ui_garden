@@ -1,46 +1,217 @@
-# Getting Started with Create React App
+# kopparthi_jashwanth UI Garden — Assignment 12: Web Component Library
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React + TypeScript component library built with **Create React App**, **styled-components** and **Storybook 8**, tested with **Jest**, **React Testing Library**, **jest-dom** and **jest-styled-components**, and shipped as a production build served by **nginx in Docker on port 8083**.
 
-## Available Scripts
+- **Student:** Jashwanth Kopparthi
+- **Container name:** `kopparthi_jashwanth_coding_assignment12`
+- **Working directory in the image:** `/kopparthi_jashwanth_ui_garden`
+- **Site URL:** <http://localhost:8083> (same as <http://127.0.0.1:8083>)
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 1. Components
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Every component lives in `src/components/<Name>/` and contains exactly these files:
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+| File | Purpose |
+| --- | --- |
+| `<Name>.tsx` | The component, styled with styled-components |
+| `<Name>.types.tsx` | TypeScript props interface |
+| `<Name>.stories.tsx` | Storybook stories (Default + Disabled) with controls |
+| `<Name>.tests.tsx` | Jest / React Testing Library tests |
+| `index.ts` | Re-exports the component and its types |
 
-### `npm test`
+The library contains: **Button, Label, Text, Table, TableHeader, TableRow, TableCell, TableFooter, Dropdown, RadioButton, Img, HeroImage, Card**.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Shared disabled-state values (grey background `#cccccc`, grey text, `cursor: not-allowed`) live in `src/components/constants.ts`. All components are exported from `src/components/index.ts`.
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 2. Prerequisites
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- [Node.js](https://nodejs.org) 18 or newer (20 LTS recommended) and npm
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (only for section 7)
+- Git
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Check your versions:
 
-### `npm run eject`
+```bash
+node -v
+npm -v
+docker -v
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+---
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 3. Project setup
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+```bash
+# 1. Clone the repository (replace the URL with your GitHub repo)
+git clone <YOUR_GITHUB_REPO_URL> kopparthi_jashwanth_ui_garden
+cd kopparthi_jashwanth_ui_garden
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+# 2. Install dependencies (an .npmrc file already sets legacy-peer-deps=true,
+#    which Create React App needs together with Storybook 8)
+npm install
+```
 
-## Learn More
+### How the project was created (for reference)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npx create-react-app kopparthi_jashwanth_ui_garden --template typescript
+cd kopparthi_jashwanth_ui_garden
+npm install styled-components@5 @types/styled-components@5
+npm install -D jest-styled-components @testing-library/jest-dom
+npx storybook@8 init
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+React is pinned to version 18 so that it works with styled-components 5 and Storybook 8.
+
+---
+
+## 4. Run the app in development mode
+
+```bash
+npm start
+```
+
+Open <http://localhost:3000>. This is a demo page that shows every component in its default and disabled states.
+
+---
+
+## 5. Run Storybook
+
+```bash
+npm run storybook
+```
+
+Open <http://localhost:6006>.
+
+In the sidebar, open **Components → Button** (or any other component). Each component has:
+
+- a **Default** story and a **Disabled** story;
+- a **Controls** panel at the bottom to change properties such as the text (`label`, `text`, `title`…), `backgroundColor`, `textColor` and `disabled`;
+- an auto-generated **Docs** page.
+
+To create a static Storybook build:
+
+```bash
+npm run build-storybook   # output goes to storybook-static/
+```
+
+---
+
+## 6. Run the tests
+
+```bash
+# Watch mode
+npm test
+
+# Single run (what CI uses)
+CI=true npm test -- --watchAll=false
+```
+
+On Windows PowerShell use:
+
+```powershell
+$env:CI="true"; npm test -- --watchAll=false
+```
+
+Jest is configured in `package.json` (`"jest": { "testMatch": [...] }`) so that files named `*.tests.tsx` are picked up, and `src/setupTests.ts` loads `@testing-library/jest-dom` and `jest-styled-components`.
+
+Every component has at least **two tests**:
+
+1. **Visible** – the component renders and `toBeVisible()` passes.
+2. **Disabled** – when `disabled` is set, the background colour changes to the grey `#cccccc` and the cursor becomes `not-allowed` (checked with `toHaveStyle`).
+
+Expected result: **14 test suites passed, 27 tests passed**.
+
+---
+
+## 7. Docker build and deployment (localhost:8083)
+
+The `Dockerfile` is a two-stage build:
+
+1. **build stage** (`node:20-alpine`) – installs dependencies and runs `npm run build` to create the Create React App **production build**.
+2. **serve stage** (`nginx:alpine`) – copies the build into the working directory **`/kopparthi_jashwanth_ui_garden`** and serves it on **port 8083** using `nginx.conf`.
+
+### Build the image
+
+```bash
+docker build -t kopparthi_jashwanth_ui_garden .
+```
+
+### Run the container (named `kopparthi_jashwanth_coding_assignment12`)
+
+```bash
+docker run -d --name kopparthi_jashwanth_coding_assignment12 -p 8083:8083 kopparthi_jashwanth_ui_garden
+```
+
+Open <http://localhost:8083> (or <http://127.0.0.1:8083>).
+
+### Useful Docker commands
+
+```bash
+docker ps                                              # container should be listed and "Up"
+docker logs kopparthi_jashwanth_coding_assignment12    # nginx logs
+docker stop kopparthi_jashwanth_coding_assignment12    # stop
+docker rm kopparthi_jashwanth_coding_assignment12      # remove (needed before re-running with the same name)
+```
+
+To rebuild after code changes:
+
+```bash
+docker stop kopparthi_jashwanth_coding_assignment12
+docker rm kopparthi_jashwanth_coding_assignment12
+docker build -t kopparthi_jashwanth_ui_garden .
+docker run -d --name kopparthi_jashwanth_coding_assignment12 -p 8083:8083 kopparthi_jashwanth_ui_garden
+```
+
+---
+
+## 8. Verify the Assignment 12 requirements
+
+| Requirement | How to verify |
+| --- | --- |
+| Built with Create React App + Storybook | `package.json` contains `react-scripts` and `storybook`; `.storybook/` folder exists; `npm run storybook` works |
+| All 13 components exist | `ls src/components` lists Button, Label, Text, Table, TableHeader, TableRow, TableCell, TableFooter, Dropdown, RadioButton, Img, HeroImage, Card |
+| Each folder has 5 files | `ls src/components/Button` shows `Button.tsx`, `Button.stories.tsx`, `Button.types.tsx`, `Button.tests.tsx`, `index.ts` (same for every folder) |
+| styled-components used for styling | Each `<Name>.tsx` uses `styled.<tag>`; there are no CSS files for components |
+| Responsive | Each component has `@media (max-width: 600px)` rules; `Table` scrolls horizontally on small screens. In the browser, open DevTools and toggle the device toolbar |
+| Storybook controls | In Storybook, open any component → **Controls** panel → change text, background colour, disabled |
+| Default and disabled states | Every component has **Default** and **Disabled** stories. Disabled components turn grey and show the `not-allowed` cursor on hover |
+| At least 2 tests per component | `CI=true npm test -- --watchAll=false` → all suites pass |
+| Dockerfile hosts production build | `docker build` runs `npm run build` and nginx serves the result |
+| Container name | `docker ps --format "{{.Names}}"` prints `kopparthi_jashwanth_coding_assignment12` |
+| Working directory | `docker exec kopparthi_jashwanth_coding_assignment12 ls /kopparthi_jashwanth_ui_garden` lists `index.html` and `static` |
+| Runs on port 8083 | Browse to <http://localhost:8083> |
+
+---
+
+## 9. Project structure
+
+```text
+kopparthi_jashwanth_ui_garden/
+├── .storybook/            # Storybook configuration (main.ts, preview.ts)
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── Button/        # Button.tsx, .types.tsx, .stories.tsx, .tests.tsx, index.ts
+│   │   ├── Label/ ... Card/
+│   │   ├── constants.ts   # shared disabled-state values
+│   │   └── index.ts       # library entry point
+│   ├── App.tsx            # demo page of all components
+│   └── setupTests.ts      # jest-dom + jest-styled-components
+├── Dockerfile
+├── nginx.conf
+├── .dockerignore
+├── .npmrc
+└── package.json
+```
+
+## 10. Troubleshooting
+
+- **`npm install` peer dependency errors** – make sure the `.npmrc` file (`legacy-peer-deps=true`) is present, or run `npm install --legacy-peer-deps`.
+- **Port 8083 already in use** – stop the other process or the old container (`docker rm -f kopparthi_jashwanth_coding_assignment12`).
+- **"container name is already in use"** – run `docker rm -f kopparthi_jashwanth_coding_assignment12` and start it again.
+- **Tests are not found** – test files must be named `<Name>.tests.tsx`; the `jest.testMatch` setting in `package.json` must be kept.
