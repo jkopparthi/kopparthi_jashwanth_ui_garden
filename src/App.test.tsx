@@ -1,9 +1,8 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders the UI garden heading and a component', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(screen.getByText('kopparthi_jashwanth UI Garden')).toBeInTheDocument();
+  expect(screen.getAllByTestId('button').length).toBeGreaterThan(0);
 });
